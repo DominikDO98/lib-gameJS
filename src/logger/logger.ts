@@ -66,7 +66,7 @@ class Logger {
   warn(message: string, place: string, save?: boolean) {
     this._winston.warn(message, place, save);
   }
-  error(message: string, place: string, save = true) {
+  error(message: string, place: string, save?: boolean) {
     this._winston.error(message, place, save);
   }
 }
