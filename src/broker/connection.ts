@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Channel, connect, Connection, ConsumeMessage } from "amqplib";
-import { logger } from "logger/logger";
-import { ValidationError } from "errors/validationError";
+import { logger } from "../logger/logger";
+import { ValidationError } from "../errors/validationError";
 
 export class RpcConnection {
   private _connection: Connection | null = null;
