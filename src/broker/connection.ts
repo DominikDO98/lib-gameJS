@@ -28,8 +28,8 @@ export class RpcConnection {
       .catch((e) => {
         logger.error(e, "Rpc connection", true);
         setTimeout(() => {
-          this.init(), 10000;
-        });
+          this.init();
+        }, 10000);
       })
       .finally(() =>
         logger.log("Broker initialization is over", "Rpc connection", false)
