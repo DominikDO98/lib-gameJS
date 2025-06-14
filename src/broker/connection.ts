@@ -55,11 +55,11 @@ export class RpcConnection {
   async sendCall(
     queue: string,
     msg: string,
-    callback: (reply: ConsumeMessage | null) => void
+    callback: (reply: ConsumeMessage | null) => unknown
   ) {
     this.valitadeConnection();
     const replyQueue = `${queue}-reply`;
-    await this._channel
+    return await this._channel
       ?.assertQueue(queue)
       .then(async () => {
         await this._channel?.assertQueue(replyQueue);
@@ -67,12 +67,18 @@ export class RpcConnection {
       })
       .then(async (send) => {
         if (!send) throw Error("Sending a msg was unsuccesful!");
-        await this._channel?.consume(replyQueue, (replyMsg) => {
-          if (!replyMsg) throw Error("No msg!");
-          logger.log(replyMsg.content.toString(), "Rpc connection");
-          callback(replyMsg);
-          this._channel?.ack(replyMsg!);
-        });
+        let outcome;
+        const consumerTag = await this._channel?.consume(
+          replyQueue,
+          (replyMsg) => {
+            if (!replyMsg) throw Error("No msg!");
+            logger.log(replyMsg.content.toString(), "Rpc connection");
+            this._channel?.ack(replyMsg!);
+            outcome = callback(replyMsg);
+          }
+        );
+        this._channel?.cancel(consumerTag!.consumerTag);
+        return outcome;
       })
       .catch((e) => {
         logger.error(e, "Rpc connection", true);
