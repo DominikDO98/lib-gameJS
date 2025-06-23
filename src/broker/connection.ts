@@ -22,24 +22,20 @@ export class RpcConnection {
       })
       .then((chan) => {
         this._channel = chan;
-        this.valitadeConnection();
+        this.validateConnection();
+        logger.log("Broker initialization is over", "Rpc connection", false);
         return [this._connection, this._channel];
       })
       .catch((e) => {
         logger.error(e, "Rpc connection", true);
-        setTimeout(() => {
-          this.init();
-        }, 10000);
-      })
-      .finally(() =>
-        logger.log("Broker initialization is over", "Rpc connection", false)
-      );
+        throw new ValidationError(e as string);
+      });
   }
   async listenQ(
     queue: string,
     callback: (replyQueue: string, msg: ConsumeMessage | null) => void
   ) {
-    this.valitadeConnection();
+    this.validateConnection();
     const replyQueue = `${queue}-reply`;
     await this._channel?.assertQueue(queue);
     await this._channel?.assertQueue(replyQueue);
@@ -57,7 +53,7 @@ export class RpcConnection {
     msg: string,
     callback: (reply: ConsumeMessage | null) => void
   ) {
-    this.valitadeConnection();
+    this.validateConnection();
     const replyQueue = `${queue}-reply`;
     await this._channel
       ?.assertQueue(queue)
@@ -79,12 +75,12 @@ export class RpcConnection {
       });
   }
   async replyCall(replyQueue: string, msg: string) {
-    this.valitadeConnection();
+    this.validateConnection();
     await this._channel?.assertQueue(replyQueue);
     this._channel?.sendToQueue(replyQueue, Buffer.from(msg));
   }
   disconnect() {
-    this.valitadeConnection();
+    this.validateConnection();
     try {
       this._channel!.close().then(() => {
         this._channel = null;
@@ -100,7 +96,7 @@ export class RpcConnection {
       );
     }
   }
-  valitadeConnection() {
+  validateConnection() {
     if (!this._connection) throw new ValidationError("No connection!");
     if (!this._channel) throw new ValidationError("No channel!");
   }
