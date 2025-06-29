@@ -28,56 +28,7 @@ export class RpcConnection {
       })
       .catch((e) => {
         logger.error(e, "Rpc connection", true);
-        throw new ValidationError(e as string);
       });
-  }
-  async listenQ(
-    queue: string,
-    callback: (replyQueue: string, msg: ConsumeMessage | null) => void
-  ) {
-    this.validateConnection();
-    const replyQueue = `${queue}-reply`;
-    await this._channel?.assertQueue(queue);
-    await this._channel?.assertQueue(replyQueue);
-    await this._channel?.prefetch(1);
-
-    await this._channel?.consume(queue, (msg) => {
-      if (!msg) throw Error("No message!");
-      logger.log(msg?.content.toString(), "Rpc connection");
-      callback(replyQueue, msg);
-      this._channel?.ack(msg);
-    });
-  }
-  async sendCall(
-    queue: string,
-    msg: string,
-    callback: (reply: ConsumeMessage | null) => void
-  ) {
-    this.validateConnection();
-    const replyQueue = `${queue}-reply`;
-    await this._channel
-      ?.assertQueue(queue)
-      .then(async () => {
-        await this._channel?.assertQueue(replyQueue);
-        return this._channel?.sendToQueue(queue, Buffer.from(msg));
-      })
-      .then(async (send) => {
-        if (!send) throw Error("Sending a msg was unsuccesful!");
-        await this._channel?.consume(replyQueue, (replyMsg) => {
-          if (!replyMsg) throw Error("No msg!");
-          logger.log(replyMsg.content.toString(), "Rpc connection");
-          callback(replyMsg);
-          this._channel?.ack(replyMsg!);
-        });
-      })
-      .catch((e) => {
-        logger.error(e, "Rpc connection", true);
-      });
-  }
-  async replyCall(replyQueue: string, msg: string) {
-    this.validateConnection();
-    await this._channel?.assertQueue(replyQueue);
-    this._channel?.sendToQueue(replyQueue, Buffer.from(msg));
   }
   disconnect() {
     this.validateConnection();
