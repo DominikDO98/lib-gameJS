@@ -70,6 +70,6 @@ export class RpcConnectionMenager {
       if (!this.isAlive) {
         this.init();
       }
-    }, 1000);
+    }, 30000);
   }
 }
