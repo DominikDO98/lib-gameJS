@@ -1,7 +1,7 @@
 import { ConsumeMessage } from "amqplib";
-import { TMessageSchema } from "./types/rpcValidator";
-import { ValidationError } from "../errors/validationError";
-import { logger } from "../logger/logger";
+import { TMessageSchema } from "./types/rpcValidator.js";
+import { ValidationError } from "../errors/validationError.js";
+import { logger } from "../logger/logger.js";
 
 export class RPCValidator {
   validateMessage(

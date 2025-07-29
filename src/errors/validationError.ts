@@ -1,4 +1,4 @@
-import { CustomError } from "./customError";
+import { CustomError } from "./customError.js";
 
 export class ValidationError extends CustomError {
   constructor(message: string) {
