@@ -69,6 +69,7 @@ export class RpcConnectionManager {
       }
       return;
     } catch (error) {
+      logger.warn(error as string, "RPC Manager: Connection checking", true);
       this._conn.disconnect();
       this.isAlive = false;
     }
