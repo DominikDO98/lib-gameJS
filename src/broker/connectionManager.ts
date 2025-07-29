@@ -17,59 +17,68 @@ export class RpcConnectionMenager {
   }
   async init() {
     try {
-      this._conn.init();
+      await this._conn.init();
+      if (this.isAlive)
+        logger.log("Broker initialization is over...", "Rpc Menager", false);
     } catch (err) {
-      logger.error(err as string, "Rpc Controller", true);
+      logger.error(err as string, "Rpc Menager", true);
     }
   }
-  listenQ(
+  async listenQ(
     queue: string,
-    callback: (replyQueue: string, msg: ConsumeMessage | null) => void
+    callback: (replyQueue: string, msg: ConsumeMessage | null) => void,
+    controller: string
   ) {
     try {
-      this._repo.listenQ(queue, callback).then(() => {
+      await this._repo.listenQ(queue, callback).then(() => {
         logger.log(
-          `Rpc Contorller is listening for ${callback.name} request`,
-          "Rpc Controller",
+          `Route for ${callback.name.split(" ")[1]} has been established`,
+          controller,
           false
         );
       });
     } catch (err) {
-      logger.error(err as string, "Rpc Controller", true);
+      logger.error(err as string, "Rpc Menager", true);
     }
   }
-  sendCall(
+  async sendCall(
     queue: string,
     msg: string,
     callback: (reply: ConsumeMessage | null) => void
   ) {
     try {
-      this._repo.sendCall(queue, msg, callback);
+      await this._repo.sendCall(queue, msg, callback);
     } catch (err) {
-      logger.error(err as string, "Rpc Controller", true);
+      logger.error(err as string, "Rpc Menager", true);
     }
   }
-  replyCall(replyQueue: string, msg: string) {
+  async replyCall(replyQueue: string, msg: string) {
     try {
-      this._repo.replyCall(replyQueue, msg);
+      await this._repo.replyCall(replyQueue, msg);
     } catch (err) {
-      logger.error(err as string, "Rpc Controller", true);
+      logger.error(err as string, "Rpc Menager", true);
     }
   }
   private async checkConnection() {
-    const q = "checkHealth";
-    await this._conn.channel?.assertQueue(q);
-    const res = await this._conn.channel?.checkQueue(q);
-    if (!res) {
+    try {
+      this._conn.validateConnection();
+      const q = "checkHealth";
+      if (this._conn.channel && this._conn.connection) {
+        await this._conn.channel?.assertQueue(q);
+        this.isAlive = (await this._conn.channel?.checkQueue(q)) ? true : false;
+      }
+      return;
+    } catch (error) {
+      this._conn.disconnect();
       this.isAlive = false;
     }
   }
-  async reconnect() {
+  reconnect() {
     setInterval(async () => {
       this.checkConnection();
       if (!this.isAlive) {
         this.init();
       }
-    }, 30000);
+    }, 3000);
   }
 }

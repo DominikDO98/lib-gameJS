@@ -15,36 +15,30 @@ export class RpcConnection {
   }
 
   async init() {
-    await connect(process.env.RABBITMQ_URI)
-      .then((conn) => {
-        this._connection = conn;
-        return this._connection.createChannel();
-      })
-      .then((chan) => {
-        this._channel = chan;
-        this.validateConnection();
-        logger.log("Broker initialization is over", "Rpc connection", false);
-        return [this._connection, this._channel];
-      })
-      .catch((e) => {
-        logger.error(e, "Rpc connection", true);
-      });
+    this._connection = await connect(process.env.RABBITMQ_URI, {});
+    this._channel = await this._connection.createChannel();
+    this.validateConnection();
+    this._channel?.on("close", () => {
+      this._channel = null;
+      this._connection = null;
+    });
+    this._channel?.on("error", () => {
+      this.disconnect();
+      this._channel = null;
+      this._connection = null;
+    });
   }
   disconnect() {
-    this.validateConnection();
     try {
-      this._channel!.close().then(() => {
-        this._channel = null;
-      });
-      this._connection!.close().then(() => {
-        this._connection = null;
-      });
-    } catch (e) {
-      logger.error(
-        `Unable to disconnect from Message Broker!\n${e}`,
-        "Rpc connection",
-        true
-      );
+      this.validateConnection();
+      this._channel?.close();
+      this._connection?.close();
+      this._channel = null;
+      this._connection = null;
+    } catch (err) {
+      logger.warn(err as string, "Rpc connection", false);
+      this._channel = null;
+      this._connection = null;
     }
   }
   validateConnection() {

@@ -13,16 +13,23 @@ export class RpcRepository {
     queue: string,
     callback: (replyQueue: string, msg: ConsumeMessage | null) => void
   ) {
+    console.log("called");
+
     const replyQueue = `${queue}-reply`;
     await this._conn.channel?.assertQueue(queue);
     await this._conn.channel?.assertQueue(replyQueue);
     await this._conn.channel?.prefetch(1);
-
     await this._conn.channel?.consume(queue, (msg) => {
-      if (!msg) throw Error("No message!");
-      logger.log(msg?.content.toString(), "Rpc connection");
-      callback(replyQueue, msg);
-      this._conn.channel?.ack(msg);
+      try {
+        console.log("message: ", msg?.content.toString());
+        if (!msg) throw Error("No message!");
+        this._conn.channel?.ack(msg);
+        logger.log(msg?.content.toString(), "Rpc Repository");
+        callback(replyQueue, msg);
+      } catch (err) {
+        logger.error(err as string, "Rpc Repository");
+        if (msg) this._conn.channel?.nack(msg);
+      }
     });
   }
   async sendCall(
@@ -42,13 +49,13 @@ export class RpcRepository {
         if (!send) throw Error("Sending a msg was unsuccesful!");
         await this._conn.channel?.consume(replyQueue, (replyMsg) => {
           if (!replyMsg) throw Error("No msg!");
-          logger.log(replyMsg.content.toString(), "Rpc connection");
-          callback(replyMsg);
+          logger.log(replyMsg.content.toString(), "Rpc Repository");
           this._conn.channel?.ack(replyMsg!);
+          callback(replyMsg);
         });
       })
       .catch((e) => {
-        logger.error(e, "Rpc connection", true);
+        logger.error(e, "Rpc Repository", true);
       });
   }
   async replyCall(replyQueue: string, msg: string) {
