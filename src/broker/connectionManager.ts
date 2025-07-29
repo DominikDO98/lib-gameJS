@@ -3,7 +3,7 @@ import { RpcConnection } from "./connection";
 import { ConsumeMessage } from "amqplib";
 import { RpcRepository } from "./repository";
 
-export class RpcConnectionMenager {
+export class RpcConnectionManager {
   public isAlive: boolean = false;
   private _conn: RpcConnection;
   private _repo: RpcRepository;
